@@ -1,0 +1,111 @@
+version: "3.9"
+
+x-besu-common: &besu-common
+  image: hyperledger/besu:23.10.2
+  restart: unless-stopped
+  volumes:
+    - ./networkFiles/genesis.json:/config/genesis.json:ro
+    - ./networkFiles/static-nodes.json:/var/lib/besu/static-nodes.json:ro
+  command: >
+    --data-path=/var/lib/besu
+    --genesis-file=/config/genesis.json
+    --node-private-key-file=/opt/besu/keys/key
+    --rpc-http-enabled
+    --rpc-http-host=0.0.0.0
+    --rpc-http-api=ETH,NET,WEB3,DEBUG,ADMIN,QBFT,TRACE
+    --rpc-http-cors-origins=*
+    --rpc-ws-enabled
+    --rpc-ws-host=0.0.0.0
+    --rpc-ws-api=ETH,NET,WEB3,DEBUG,ADMIN,QBFT,TRACE
+    --host-whitelist=*
+    --p2p-host=0.0.0.0
+    --p2p-port=30303
+    --bootnodes=${BOOTNODES}
+    --min-gas-price=0
+    --data-storage-format=BONSAI
+    --sync-mode=FULL
+    --metrics-enabled
+    --metrics-host=0.0.0.0
+    --metrics-port=9545
+    --logging=INFO
+  environment:
+    JAVA_OPTS: "-Xmx1g"
+    BOOTNODES: ${BOOTNODES}
+
+services:
+  node1:
+    <<: *besu-common
+    container_name: besu-node1
+    hostname: node1
+    volumes:
+      - ./networkFiles/genesis.json:/config/genesis.json:ro
+      - ./networkFiles/static-nodes.json:/var/lib/besu/static-nodes.json:ro
+      - ./networkFiles/keys/0x03c6d503a56ea77d8c236c6e83ab0fd5cedf561b:/opt/besu/keys:ro
+      - ./data/node1:/var/lib/besu
+    networks:
+      besu-net:
+        ipv4_address: 172.25.0.11
+    ports:
+      - "8545:8545"   # HTTP RPC
+      - "8546:8546"   # WebSocket RPC
+      - "9545:9545"   # Metrics
+      - "30303:30303" # P2P
+
+  node2:
+    <<: *besu-common
+    container_name: besu-node2
+    hostname: node2
+    volumes:
+      - ./networkFiles/genesis.json:/config/genesis.json:ro
+      - ./networkFiles/static-nodes.json:/var/lib/besu/static-nodes.json:ro
+      - ./networkFiles/keys/0x6073f033774c49b662484358754be188812bd9b1:/opt/besu/keys:ro
+      - ./data/node2:/var/lib/besu
+    networks:
+      besu-net:
+        ipv4_address: 172.25.0.12
+
+  node3:
+    <<: *besu-common
+    container_name: besu-node3
+    hostname: node3
+    volumes:
+      - ./networkFiles/genesis.json:/config/genesis.json:ro
+      - ./networkFiles/static-nodes.json:/var/lib/besu/static-nodes.json:ro
+      - ./networkFiles/keys/0xb39b217719896ca2143d52ce2a6f893eb1b0196f:/opt/besu/keys:ro
+      - ./data/node3:/var/lib/besu
+    networks:
+      besu-net:
+        ipv4_address: 172.25.0.13
+
+  node4:
+    <<: *besu-common
+    container_name: besu-node4
+    hostname: node4
+    volumes:
+      - ./networkFiles/genesis.json:/config/genesis.json:ro
+      - ./networkFiles/static-nodes.json:/var/lib/besu/static-nodes.json:ro
+      - ./networkFiles/keys/0x7ec61426b877e6469584d5e052958fd168a5f395:/opt/besu/keys:ro
+      - ./data/node4:/var/lib/besu
+    networks:
+      besu-net:
+        ipv4_address: 172.25.0.14
+
+  node5:
+    <<: *besu-common
+    container_name: besu-node5
+    hostname: node5
+    volumes:
+      - ./networkFiles/genesis.json:/config/genesis.json:ro
+      - ./networkFiles/static-nodes.json:/var/lib/besu/static-nodes.json:ro
+      - ./networkFiles/keys/0x9e0bd50a334e7e078d1c1e000e61d3e7e1e0fca7:/opt/besu/keys:ro
+      - ./data/node5:/var/lib/besu
+    networks:
+      besu-net:
+        ipv4_address: 172.25.0.15
+
+networks:
+  besu-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/24
