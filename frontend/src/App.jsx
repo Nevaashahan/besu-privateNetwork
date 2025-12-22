@@ -1,7 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
 
-const defaultRpc = "http://localhost:8545";
+const defaultRpc = (() => {
+  const envRpc = import.meta?.env?.VITE_RPC_URL;
+  if (envRpc) return envRpc;
+  if (import.meta?.env?.DEV) return "http://localhost:8545";
+  if (typeof window === "undefined") return "http://localhost:8545";
+  return `${window.location.origin}/rpc`;
+})();
 
 export default function App() {
   const [rpcUrl, setRpcUrl] = useState(defaultRpc);

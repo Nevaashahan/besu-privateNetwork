@@ -103,6 +103,15 @@ services:
       besu-net:
         ipv4_address: 172.25.0.15
 
+  frontend:
+    build:
+      context: ./frontend
+    container_name: besu-frontend
+    ports:
+      - "5178:80"
+    networks:
+      - besu-net
+
 networks:
   besu-net:
     driver: bridge
