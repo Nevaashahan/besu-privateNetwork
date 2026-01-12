@@ -5,7 +5,7 @@
     "londonBlock" : 0,
     "zeroBaseFee" : true,
     "qbft" : {
-      "blockperiodseconds" : 2,
+      "blockperiodseconds" : 20,
       "epochlength" : 30000,
       "blockreward" : "0x0",
       "requesttimeoutseconds" : 10
