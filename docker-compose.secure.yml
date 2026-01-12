@@ -1,0 +1,194 @@
+version: "3.9"
+
+x-besu-common: &besu-common
+  image: hyperledger/besu:23.10.2
+  restart: unless-stopped
+  volumes:
+    - ./networkFiles/genesis.json:/config/genesis.json:ro
+    - ./networkFiles/static-nodes.json:/var/lib/besu/static-nodes.json:ro
+  command: >
+    --data-path=/var/lib/besu
+    --genesis-file=/config/genesis.json
+    --node-private-key-file=/opt/besu/keys/key
+    --host-whitelist=localhost,127.0.0.1,rpc-write-gateway,rpc-read-gateway,besu-frontend
+    --p2p-host=0.0.0.0
+    --p2p-port=30303
+    --bootnodes=${BOOTNODES}
+    --min-gas-price=0
+    --data-storage-format=BONSAI
+    --sync-mode=FULL
+    --logging=INFO
+  environment:
+    JAVA_OPTS: ${BESU_JAVA_OPTS}
+    BOOTNODES: ${BOOTNODES}
+  networks:
+    besu-internal:
+      ipv4_address: 172.26.0.10
+  mem_limit: 2g
+  cpus: "1.0"
+
+services:
+  node1:
+    <<: *besu-common
+    container_name: besu-node1
+    hostname: node1
+    command: >
+      --data-path=/var/lib/besu
+      --genesis-file=/config/genesis.json
+      --node-private-key-file=/opt/besu/keys/key
+      --rpc-http-enabled
+      --rpc-http-host=0.0.0.0
+      --rpc-http-api=ETH,NET,WEB3
+      --rpc-http-cors-origins=${RPC_CORS_ORIGINS}
+      --host-whitelist=localhost,127.0.0.1,rpc-write-gateway,rpc-read-gateway,besu-frontend
+      --p2p-host=0.0.0.0
+      --p2p-port=30303
+      --bootnodes=${BOOTNODES}
+      --min-gas-price=0
+      --data-storage-format=BONSAI
+      --sync-mode=FULL
+      --logging=INFO
+    volumes:
+      - ./networkFiles/genesis.json:/config/genesis.json:ro
+      - ./networkFiles/static-nodes.json:/var/lib/besu/static-nodes.json:ro
+      - ./networkFiles/keys/0x03c6d503a56ea77d8c236c6e83ab0fd5cedf561b:/opt/besu/keys:ro
+      - ./data/node1:/var/lib/besu
+    networks:
+      besu-internal:
+        ipv4_address: 172.26.0.11
+
+  node2:
+    <<: *besu-common
+    container_name: besu-node2
+    hostname: node2
+    command: >
+      --data-path=/var/lib/besu
+      --genesis-file=/config/genesis.json
+      --node-private-key-file=/opt/besu/keys/key
+      --rpc-http-enabled
+      --rpc-http-host=0.0.0.0
+      --rpc-http-api=ETH,NET,WEB3
+      --rpc-http-cors-origins=${RPC_CORS_ORIGINS}
+      --host-whitelist=localhost,127.0.0.1,rpc-write-gateway,rpc-read-gateway,besu-frontend
+      --p2p-host=0.0.0.0
+      --p2p-port=30303
+      --bootnodes=${BOOTNODES}
+      --min-gas-price=0
+      --data-storage-format=BONSAI
+      --sync-mode=FULL
+      --logging=INFO
+    volumes:
+      - ./networkFiles/genesis.json:/config/genesis.json:ro
+      - ./networkFiles/static-nodes.json:/var/lib/besu/static-nodes.json:ro
+      - ./networkFiles/keys/0x6073f033774c49b662484358754be188812bd9b1:/opt/besu/keys:ro
+      - ./data/node2:/var/lib/besu
+    networks:
+      besu-internal:
+        ipv4_address: 172.26.0.12
+
+  node3:
+    <<: *besu-common
+    container_name: besu-node3
+    hostname: node3
+    volumes:
+      - ./networkFiles/genesis.json:/config/genesis.json:ro
+      - ./networkFiles/static-nodes.json:/var/lib/besu/static-nodes.json:ro
+      - ./networkFiles/keys/0xb39b217719896ca2143d52ce2a6f893eb1b0196f:/opt/besu/keys:ro
+      - ./data/node3:/var/lib/besu
+    networks:
+      besu-internal:
+        ipv4_address: 172.26.0.13
+
+  node4:
+    <<: *besu-common
+    container_name: besu-node4
+    hostname: node4
+    volumes:
+      - ./networkFiles/genesis.json:/config/genesis.json:ro
+      - ./networkFiles/static-nodes.json:/var/lib/besu/static-nodes.json:ro
+      - ./networkFiles/keys/0x7ec61426b877e6469584d5e052958fd168a5f395:/opt/besu/keys:ro
+      - ./data/node4:/var/lib/besu
+    networks:
+      besu-internal:
+        ipv4_address: 172.26.0.14
+
+  node5:
+    <<: *besu-common
+    container_name: besu-node5
+    hostname: node5
+    volumes:
+      - ./networkFiles/genesis.json:/config/genesis.json:ro
+      - ./networkFiles/static-nodes.json:/var/lib/besu/static-nodes.json:ro
+      - ./networkFiles/keys/0x9e0bd50a334e7e078d1c1e000e61d3e7e1e0fca7:/opt/besu/keys:ro
+      - ./data/node5:/var/lib/besu
+    networks:
+      besu-internal:
+        ipv4_address: 172.26.0.15
+
+  rpc-write-gateway:
+    image: nginx:alpine
+    container_name: rpc-write-gateway
+    ports:
+      - "18545:80"
+    volumes:
+      - ./gateway/nginx-write.conf:/etc/nginx/templates/default.conf.template:ro
+      - ./logs:/var/log/nginx
+    environment:
+      RPC_SHARED_SECRET: ${RPC_SHARED_SECRET}
+      RPC_ALLOWLIST_1: ${RPC_ALLOWLIST_1}
+      RPC_ALLOWLIST_2: ${RPC_ALLOWLIST_2}
+      RPC_ALLOWLIST_3: ${RPC_ALLOWLIST_3}
+      RPC_ALLOWLIST_4: ${RPC_ALLOWLIST_4}
+      RPC_RATE: ${RPC_RATE}
+    networks:
+      - besu-internal
+      - edge-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- --header='Content-Type: application/json' --header=\"X-Shared-Secret: $RPC_SHARED_SECRET\" --post-data='{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' http://localhost/ | grep -q 'result'"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  rpc-read-gateway:
+    image: nginx:alpine
+    container_name: rpc-read-gateway
+    ports:
+      - "18547:80"
+    volumes:
+      - ./gateway/nginx-read.conf:/etc/nginx/templates/default.conf.template:ro
+      - ./logs:/var/log/nginx
+    environment:
+      RPC_SHARED_SECRET: ${RPC_SHARED_SECRET}
+      RPC_ALLOWLIST_1: ${RPC_ALLOWLIST_1}
+      RPC_ALLOWLIST_2: ${RPC_ALLOWLIST_2}
+      RPC_ALLOWLIST_3: ${RPC_ALLOWLIST_3}
+      RPC_ALLOWLIST_4: ${RPC_ALLOWLIST_4}
+      RPC_RATE: ${RPC_RATE}
+    networks:
+      - besu-internal
+      - edge-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- --header='Content-Type: application/json' --header=\"X-Shared-Secret: $RPC_SHARED_SECRET\" --post-data='{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' http://localhost/ | grep -q 'result'"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: besu-frontend
+    ports:
+      - "5178:80"
+    networks:
+      - besu-internal
+      - edge-net
+
+networks:
+  besu-internal:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.26.0.0/24
+  edge-net:
+    driver: bridge
